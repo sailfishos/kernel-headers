@@ -1,0 +1,26 @@
+* Tue Jan 4 2011 Arjan van de Ven <arjan@linux.intel.com> - 2.6.37
+- Update to 2.6.37, so that the kernel-headers API/ABI actually matches
+  the reference kernel as decided by the architecture team.
+  (BMC#11626)
+
+* Wed Jul 7 2010 Arjan van de Ven <arjan@linux.intel.com> - 2.6.34
+- fix grammar (BMC 3703)
+
+* Wed Jun 2 2010 Arjan van de Ven <arjan@linux.intel.com> - 2.6.34
+- Update to 2.6.34
+
+* Mon Mar 1 2010 Arjan van de Ven <arjan@linux.intel.com> - 2.6.33
+- Update to 2.6.33
+
+* Fri Jan 08 2010 Yong Wang <yong.y.wang@intel.com> 2.6.32
+- Update to 2.6.32
+
+* Fri Oct 02 2009 Anas Nashif <anas.nashif@intel.com> - 2.6.31
+- Update to 2.6.31
+
+* Wed Jul 08 2009 Arjan van de Ven <arjan@linux.intel.com> 2.6.30
+- Update to 2.6.30
+
+* Wed Jan 07 2009 Anas Nashif <anas.nashif@intel.com> 2.6.28
+- Update to 2.6.28
+
