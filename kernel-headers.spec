@@ -63,14 +63,6 @@ rm -f $RPM_BUILD_ROOT/usr/include/asm*/atomic.h
 rm -f $RPM_BUILD_ROOT/usr/include/asm*/io.h
 rm -f $RPM_BUILD_ROOT/usr/include/asm*/irq.h
 
-#
-# Unfortunately we have a naming clash between the kernel ABI headers and
-# the userland MESA headers, both occupy /usr/include/drm.
-# We'll move the kernel out of the way and hope MESA doesn't do something stupid
-# like use an incompatible API/ABI.
-#
-mv $RPM_BUILD_ROOT/usr/include/drm $RPM_BUILD_ROOT/usr/include/kerneldrm
-
 
 
 %clean

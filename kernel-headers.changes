@@ -1,3 +1,6 @@
+* Fri Jan 25 2013 Oleg Girko <ol+mer@infoserver.ru> - 2.6.37
+- Not moving /usr/include/drm: it doesn't conflict with libdrm anymore.
+
 * Tue Jan 4 2011 Arjan van de Ven <arjan@linux.intel.com> - 2.6.37
 - Update to 2.6.37, so that the kernel-headers API/ABI actually matches
   the reference kernel as decided by the architecture team.
