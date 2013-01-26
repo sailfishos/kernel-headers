@@ -5,7 +5,7 @@ License: GPLv2
 URL: http://www.kernel.org/
 
 
-%define kversion 2.6.37
+%define kversion 3.7.2
 Version: %{kversion}
 Release: 1
 BuildRoot: %{_tmppath}/kernel-%{kversion}-root
@@ -30,7 +30,7 @@ Provides: kernel-headers = %{kversion}
 
 
 
-Source0: ftp://ftp.kernel.org/pub/linux/kernel/v2.6/linux-%{kversion}.tar.bz2
+Source0: ftp://ftp.kernel.org/pub/linux/kernel/v3.x/linux-%{kversion}.tar.bz2
 
 BuildRequires:  findutils,  make >= 3.78, diffutils, gawk
 
