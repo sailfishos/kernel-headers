@@ -5,7 +5,7 @@ License: GPLv2
 URL: http://www.kernel.org/
 
 
-%define kversion 3.7.2
+%define kversion 3.12.6
 Version: %{kversion}
 Release: 1
 BuildRoot: %{_tmppath}/kernel-%{kversion}-root
