@@ -1,3 +1,7 @@
+* Tue Feb 26 2019 Tomi Leppänen <tomi.leppanen@jolla.com> - 3.18.136
+- Backport patch for overlapping definitions. Contributes to JB#43919
+- Update to 3.18.136
+
 * Mon Nov 14 2016 Andrew Branson <andrew.branson@jollamobile.com> - 3.12.66
 - Update to 3.12.66. Contributes JB#36790
 
