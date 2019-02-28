@@ -4,11 +4,9 @@ Group: System/Kernel
 License: GPLv2
 URL: http://www.kernel.org/
 
-
-%define kversion 3.12.66
+%define kversion 3.18.136
 Version: %{kversion}
 Release: 1
-BuildRoot: %{_tmppath}/kernel-%{kversion}-root
 Provides: kernel-headers = %{kversion}
 
 #
@@ -28,13 +26,9 @@ Provides: kernel-headers = %{kversion}
 # code.
 #
 
-
-
 Source0: ftp://ftp.kernel.org/pub/linux/kernel/v3.x/linux-%{kversion}.tar.xz
 
 BuildRequires:  findutils,  make >= 3.78, diffutils, gawk
-
-
 
 %description
 The kernel-headers package contains the header files that describe
@@ -42,18 +36,15 @@ the kernel ABI. This package is mostly used by the C library and some
 low level system software, and is only used indirectly by regular
 applications.
 
-
 %prep
 %setup -q -n linux-%{kversion}
 
 %build
-pwd
 make allyesconfig
 
 %install
 
 make INSTALL_HDR_PATH=$RPM_BUILD_ROOT/usr headers_install
-
 
 # glibc provides scsi headers for itself, for now
 find  $RPM_BUILD_ROOT/usr/include -name ".install" | xargs rm -f
@@ -63,12 +54,7 @@ rm -f $RPM_BUILD_ROOT/usr/include/asm*/atomic.h
 rm -f $RPM_BUILD_ROOT/usr/include/asm*/io.h
 rm -f $RPM_BUILD_ROOT/usr/include/asm*/irq.h
 
-
-
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-
 %files
 %defattr(-,root,root)
+%license COPYING
 /usr/include/*
