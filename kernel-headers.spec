@@ -27,6 +27,7 @@ Provides: kernel-headers = %{kversion}
 #
 
 Source0: ftp://ftp.kernel.org/pub/linux/kernel/v3.x/linux-%{kversion}.tar.xz
+Patch0: api-fix-compatibility-of-linux-in.h-with-netinet-in.patch
 
 BuildRequires:  findutils,  make >= 3.78, diffutils, gawk
 
@@ -38,6 +39,8 @@ applications.
 
 %prep
 %setup -q -n linux-%{kversion}
+# api-fix-compatibility-of-linux-in.h-with-netinet-in.patch
+%patch0 -p1
 
 %build
 make allyesconfig
