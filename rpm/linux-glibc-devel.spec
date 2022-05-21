@@ -3,7 +3,7 @@ Name: linux-glibc-devel
 License: GPLv2
 URL: http://www.kernel.org/
 
-%define kversion 4.4.302
+%define kversion 5.4.297
 Version: %{kversion}
 Release: 1
 Provides: kernel-headers = %{kversion}
@@ -25,10 +25,10 @@ Obsoletes: kernel-headers < %{kversion}
 # a provide a copy of the header they are interested in into their own package/source
 # code.
 #
-
+Patch0: sed.patch
 Source0: %{name}-%{version}.tar.xz
 
-BuildRequires:  findutils,  make >= 3.78, diffutils, gawk
+BuildRequires:  findutils,  make >= 3.78, diffutils, gawk, flex, bison, rsync
 
 %description
 The linux-glibc-devel package contains the header files that describe
