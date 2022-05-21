@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eli Cohen <eli@mellanox.com>
+Date: Fri, 11 Mar 2016 22:58:34 +0200
+Subject: [PATCH] net/core: Add support for configuring VF GUIDs
+
+Add two new NLAs to support configuration of Infiniband node or port
+GUIDs. New applications can choose to use this interface to configure
+GUIDs with iproute2 with commands such as:
+
+ip link set dev ib0 vf 0 node_guid 00:02:c9:03:00:21:6e:70
+ip link set dev ib0 vf 0 port_guid 00:02:c9:03:00:21:6e:78
+
+A new ndo, ndo_sef_vf_guid is introduced to notify the net device of the
+request to change the GUID.
+
+Signed-off-by: Eli Cohen <eli@mellanox.com>
+Reviewed-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Doug Ledford <dledford@redhat.com>
+---
+ include/linux/netdevice.h    |  3 +++
+ include/uapi/linux/if_link.h |  5 +++++
+ net/core/rtnetlink.c         | 36 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 44 insertions(+)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index f7668c0c2221d19da8e328957e6faa094021f69e..d81a94a0a5a8cc7b6a8a7bab7fa3843836c59be1 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1132,6 +1132,9 @@ struct net_device_ops {
+ 						   struct nlattr *port[]);
+ 	int			(*ndo_get_vf_port)(struct net_device *dev,
+ 						   int vf, struct sk_buff *skb);
++	int			(*ndo_set_vf_guid)(struct net_device *dev,
++						   int vf, u64 guid,
++						   int guid_type);
+ 	int			(*ndo_set_vf_rss_query_en)(
+ 						   struct net_device *dev,
+ 						   int vf, bool setting);
+diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
+index 9513aa863838dc86d607eaa3596dae6b1aa4f487..eee25e352b40c8e2df47de21d12e044b35522c76 100644
+--- a/include/uapi/linux/if_link.h
++++ b/include/uapi/linux/if_link.h
+@@ -603,6 +603,11 @@ struct ifla_vf_spoofchk {
+ 	__u32 setting;
+ };
+ 
++struct ifla_vf_guid {
++	__u32 vf;
++	__u64 guid;
++};
++
+ enum {
+ 	IFLA_VF_LINK_STATE_AUTO,	/* link state of the uplink */
+ 	IFLA_VF_LINK_STATE_ENABLE,	/* link always up */
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 0c293cc61f7768b1ffa88264a7c1f019c1dbadc2..d0ad679b026c59f22ee5e094af4f517a8694b5cc 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1410,6 +1410,8 @@ static const struct nla_policy ifla_vf_policy[IFLA_VF_MAX+1] = {
+ 	[IFLA_VF_RSS_QUERY_EN]	= { .len = sizeof(struct ifla_vf_rss_query_en) },
+ 	[IFLA_VF_STATS]		= { .type = NLA_NESTED },
+ 	[IFLA_VF_TRUST]		= { .len = sizeof(struct ifla_vf_trust) },
++	[IFLA_VF_IB_NODE_GUID]	= { .len = sizeof(struct ifla_vf_guid) },
++	[IFLA_VF_IB_PORT_GUID]	= { .len = sizeof(struct ifla_vf_guid) },
+ };
+ 
+ static const struct nla_policy ifla_vf_stats_policy[IFLA_VF_STATS_MAX + 1] = {
+@@ -1557,6 +1559,22 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
+ 	return 0;
+ }
+ 
++static int handle_infiniband_guid(struct net_device *dev, struct ifla_vf_guid *ivt,
++				  int guid_type)
++{
++	const struct net_device_ops *ops = dev->netdev_ops;
++
++	return ops->ndo_set_vf_guid(dev, ivt->vf, ivt->guid, guid_type);
++}
++
++static int handle_vf_guid(struct net_device *dev, struct ifla_vf_guid *ivt, int guid_type)
++{
++	if (dev->type != ARPHRD_INFINIBAND)
++		return -EOPNOTSUPP;
++
++	return handle_infiniband_guid(dev, ivt, guid_type);
++}
++
+ static int do_setvfinfo(struct net_device *dev, struct nlattr **tb)
+ {
+ 	const struct net_device_ops *ops = dev->netdev_ops;
+@@ -1686,6 +1704,24 @@ static int do_setvfinfo(struct net_device *dev, struct nlattr **tb)
+ 			return err;
+ 	}
+ 
++	if (tb[IFLA_VF_IB_NODE_GUID]) {
++		struct ifla_vf_guid *ivt = nla_data(tb[IFLA_VF_IB_NODE_GUID]);
++
++		if (!ops->ndo_set_vf_guid)
++			return -EOPNOTSUPP;
++
++		return handle_vf_guid(dev, ivt, IFLA_VF_IB_NODE_GUID);
++	}
++
++	if (tb[IFLA_VF_IB_PORT_GUID]) {
++		struct ifla_vf_guid *ivt = nla_data(tb[IFLA_VF_IB_PORT_GUID]);
++
++		if (!ops->ndo_set_vf_guid)
++			return -EOPNOTSUPP;
++
++		return handle_vf_guid(dev, ivt, IFLA_VF_IB_PORT_GUID);
++	}
++
+ 	return err;
+ }
+ 

@@ -26,8 +26,10 @@ Provides: kernel-headers = %{kversion}
 # code.
 #
 
-Source0: ftp://ftp.kernel.org/pub/linux/kernel/v3.x/linux-%{kversion}.tar.xz
-Patch0: api-fix-compatibility-of-linux-in.h-with-netinet-in.patch
+Source0: %{name}-%{version}.tar.xz
+Patch0001: 0001-net-Update-API-for-VF-vlan-protocol-802.1ad-support.patch
+Patch0002: 0002-prctl-Add-speculation-control-prctls.patch
+patch0003: 0003-net-core-Add-support-for-configuring-VF-GUIDs.patch
 
 BuildRequires:  findutils,  make >= 3.78, diffutils, gawk
 
@@ -38,12 +40,10 @@ low level system software, and is only used indirectly by regular
 applications.
 
 %prep
-%setup -q -n linux-%{kversion}
-# api-fix-compatibility-of-linux-in.h-with-netinet-in.patch
-%patch0 -p1
+%autosetup -p1 -n %{name}-%{version}/upstream
 
 %build
-make allyesconfig
+make mrproper
 
 %install
 
