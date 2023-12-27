@@ -1,10 +1,9 @@
 Summary: Headers describing the kernel ABI
 Name: kernel-headers
-Group: System/Kernel
 License: GPLv2
 URL: http://www.kernel.org/
 
-%define kversion 3.18.136
+%define kversion 4.19.303
 Version: %{kversion}
 Release: 1
 Provides: kernel-headers = %{kversion}
@@ -25,11 +24,8 @@ Provides: kernel-headers = %{kversion}
 # a provide a copy of the header they are interested in into their own package/source
 # code.
 #
-
+Patch0: sed.patch
 Source0: %{name}-%{version}.tar.xz
-Patch0001: 0001-net-Update-API-for-VF-vlan-protocol-802.1ad-support.patch
-Patch0002: 0002-prctl-Add-speculation-control-prctls.patch
-patch0003: 0003-net-core-Add-support-for-configuring-VF-GUIDs.patch
 
 BuildRequires:  findutils,  make >= 3.78, diffutils, gawk
 
