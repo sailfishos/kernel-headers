@@ -5,7 +5,7 @@ URL: http://www.kernel.org/
 
 %define kversion 3.18.136
 Version: %{kversion}
-Release: 1
+Release: 2
 Provides: kernel-headers = %{kversion}
 Obsoletes: kernel-headers <= %{kversion}
 
