@@ -1,6 +1,5 @@
 Summary: Headers describing the kernel ABI
-Name: kernel-headers
-Group: System/Kernel
+Name: linux-glibc-devel
 License: GPLv2
 URL: http://www.kernel.org/
 
@@ -8,6 +7,7 @@ URL: http://www.kernel.org/
 Version: %{kversion}
 Release: 1
 Provides: kernel-headers = %{kversion}
+Obsoletes: kernel-headers <= %{kversion}
 
 #
 # A note about versions and patches.
@@ -32,7 +32,7 @@ Patch0: api-fix-compatibility-of-linux-in.h-with-netinet-in.patch
 BuildRequires:  findutils,  make >= 3.78, diffutils, gawk
 
 %description
-The kernel-headers package contains the header files that describe
+The linux-glibc-devel package contains the header files that describe
 the kernel ABI. This package is mostly used by the C library and some
 low level system software, and is only used indirectly by regular
 applications.
