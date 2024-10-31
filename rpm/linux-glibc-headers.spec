@@ -3,7 +3,7 @@ Name: linux-glibc-devel
 License: GPLv2
 URL: http://www.kernel.org/
 
-%define kversion 3.18.136
+%define kversion 4.4.302
 Version: %{kversion}
 Release: 1
 Provides: kernel-headers = %{kversion}
@@ -29,7 +29,7 @@ Obsoletes: kernel-headers <= %{kversion}
 Source0: %{name}-%{version}.tar.xz
 Patch0001: 0001-net-Update-API-for-VF-vlan-protocol-802.1ad-support.patch
 Patch0002: 0002-prctl-Add-speculation-control-prctls.patch
-patch0003: 0003-net-core-Add-support-for-configuring-VF-GUIDs.patch
+Patch0003: 0003-net-core-Add-support-for-configuring-VF-GUIDs.patch
 
 BuildRequires:  findutils,  make >= 3.78, diffutils, gawk
 

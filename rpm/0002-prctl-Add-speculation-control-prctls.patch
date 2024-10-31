@@ -51,16 +51,14 @@ Reviewed-by: Ingo Molnar <mingo@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
  Documentation/prctl/spec_ctrl.rst | 86 +++++++++++++++++++++++++++++++
- include/linux/nospec.h            | 63 ++++++++++++++++++++++
  include/uapi/linux/prctl.h        | 20 +++++++
- kernel/sys.c                      | 46 +++++++++++++++++
- 4 files changed, 215 insertions(+)
+ kernel/sys.c                      | 44 ++++++++++++++++
+ 3 files changed, 150 insertions(+)
  create mode 100644 Documentation/prctl/spec_ctrl.rst
- create mode 100644 include/linux/nospec.h
 
 diff --git a/Documentation/prctl/spec_ctrl.rst b/Documentation/prctl/spec_ctrl.rst
 new file mode 100644
-index 0000000000000000000000000000000000000000..ddbebcd012084a7109bbad2826f4d763dc457af9
+index 000000000000..ddbebcd01208
 --- /dev/null
 +++ b/Documentation/prctl/spec_ctrl.rst
 @@ -0,0 +1,86 @@
@@ -150,82 +148,13 @@ index 0000000000000000000000000000000000000000..ddbebcd012084a7109bbad2826f4d763
 +   * prctl(PR_GET_SPECULATION_CTRL, PR_SPEC_STORE_BYPASS, 0, 0, 0);
 +   * prctl(PR_SET_SPECULATION_CTRL, PR_SPEC_STORE_BYPASS, PR_SPEC_ENABLE, 0, 0);
 +   * prctl(PR_SET_SPECULATION_CTRL, PR_SPEC_STORE_BYPASS, PR_SPEC_DISABLE, 0, 0);
-diff --git a/include/linux/nospec.h b/include/linux/nospec.h
-new file mode 100644
-index 0000000000000000000000000000000000000000..700bb8a4e4eac8a4e15418d87ac175f647bcb4cc
---- /dev/null
-+++ b/include/linux/nospec.h
-@@ -0,0 +1,63 @@
-+// SPDX-License-Identifier: GPL-2.0
-+// Copyright(c) 2018 Linus Torvalds. All rights reserved.
-+// Copyright(c) 2018 Alexei Starovoitov. All rights reserved.
-+// Copyright(c) 2018 Intel Corporation. All rights reserved.
-+
-+#ifndef _LINUX_NOSPEC_H
-+#define _LINUX_NOSPEC_H
-+#include <asm/barrier.h>
-+
-+/**
-+ * array_index_mask_nospec() - generate a ~0 mask when index < size, 0 otherwise
-+ * @index: array element index
-+ * @size: number of elements in array
-+ *
-+ * When @index is out of bounds (@index >= @size), the sign bit will be
-+ * set.  Extend the sign bit to all bits and invert, giving a result of
-+ * zero for an out of bounds index, or ~0 if within bounds [0, @size).
-+ */
-+#ifndef array_index_mask_nospec
-+static inline unsigned long array_index_mask_nospec(unsigned long index,
-+						    unsigned long size)
-+{
-+	/*
-+	 * Always calculate and emit the mask even if the compiler
-+	 * thinks the mask is not needed. The compiler does not take
-+	 * into account the value of @index under speculation.
-+	 */
-+	OPTIMIZER_HIDE_VAR(index);
-+	return ~(long)(index | (size - 1UL - index)) >> (BITS_PER_LONG - 1);
-+}
-+#endif
-+
-+/*
-+ * array_index_nospec - sanitize an array index after a bounds check
-+ *
-+ * For a code sequence like:
-+ *
-+ *     if (index < size) {
-+ *         index = array_index_nospec(index, size);
-+ *         val = array[index];
-+ *     }
-+ *
-+ * ...if the CPU speculates past the bounds check then
-+ * array_index_nospec() will clamp the index within the range of [0,
-+ * size).
-+ */
-+#define array_index_nospec(index, size)					\
-+({									\
-+	typeof(index) _i = (index);					\
-+	typeof(size) _s = (size);					\
-+	unsigned long _mask = array_index_mask_nospec(_i, _s);		\
-+									\
-+	BUILD_BUG_ON(sizeof(_i) > sizeof(long));			\
-+	BUILD_BUG_ON(sizeof(_s) > sizeof(long));			\
-+									\
-+	(typeof(_i)) (_i & _mask);					\
-+})
-+
-+/* Speculation control prctl */
-+int arch_prctl_spec_ctrl_get(unsigned long which);
-+int arch_prctl_spec_ctrl_set(unsigned long which, unsigned long ctrl);
-+
-+#endif /* _LINUX_NOSPEC_H */
 diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
-index a8d0759a9e400c5d472fe37d13a924bc9e9777a6..f032e5d3f5f396ab1b6a92a2200fbffee1a7e63e 100644
+index 64ec0d62e5f5..b702a624ea83 100644
 --- a/include/uapi/linux/prctl.h
 +++ b/include/uapi/linux/prctl.h
-@@ -197,4 +197,24 @@ struct prctl_mm_map {
- # define PR_CAP_AMBIENT_LOWER		3
- # define PR_CAP_AMBIENT_CLEAR_ALL	4
+@@ -210,4 +210,24 @@ struct prctl_mm_map {
+ # define PR_SPEC_DISABLE		(1UL << 2)
+ # define PR_SPEC_FORCE_DISABLE		(1UL << 3)
  
 +/* arm64 Scalable Vector Extension controls */
 +/* Flag values must be kept in sync with ptrace NT_ARM_SVE interface */
@@ -249,21 +178,12 @@ index a8d0759a9e400c5d472fe37d13a924bc9e9777a6..f032e5d3f5f396ab1b6a92a2200fbffe
 +
  #endif /* _LINUX_PRCTL_H */
 diff --git a/kernel/sys.c b/kernel/sys.c
-index 6af9212ab5aab7cef491eb4e40e7c9277c1f2ac0..4e24515f78bfc5f757d8ed3e41ab76af7089b8e0 100644
+index ee8d83885367..3b2f67a55457 100644
 --- a/kernel/sys.c
 +++ b/kernel/sys.c
-@@ -53,6 +53,8 @@
- #include <linux/uidgid.h>
- #include <linux/cred.h>
- 
-+#include <linux/nospec.h>
-+
- #include <linux/kmsg_dump.h>
- /* Move somewhere else to avoid recompiling? */
- #include <generated/utsrelease.h>
-@@ -2072,6 +2074,34 @@ static int prctl_get_tid_address(struct task_struct *me, int __user **tid_addr)
+@@ -2076,6 +2076,34 @@ int __weak arch_prctl_spec_ctrl_set(struct task_struct *t, unsigned long which,
+ 	return -EINVAL;
  }
- #endif
  
 +static int propagate_has_child_subreaper(struct task_struct *p, void *data)
 +{
@@ -296,9 +216,9 @@ index 6af9212ab5aab7cef491eb4e40e7c9277c1f2ac0..4e24515f78bfc5f757d8ed3e41ab76af
  SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
  		unsigned long, arg4, unsigned long, arg5)
  {
-@@ -2266,6 +2296,22 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 	case PR_GET_FP_MODE:
- 		error = GET_FP_MODE(me);
+@@ -2280,6 +2308,22 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			return -EINVAL;
+ 		error = arch_prctl_spec_ctrl_set(me, arg2, arg3);
  		break;
 +	case PR_SVE_SET_VL:
 +		error = SVE_SET_VL(arg2);
