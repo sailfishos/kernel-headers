@@ -9,6 +9,33 @@ Release: 1
 Provides: kernel-headers = %{kversion}
 Obsoletes: kernel-headers < %{kversion}
 
+%{lua:
+function cross_archs()
+  return "aarch64", "arm", "i486", "x86_64"
+end
+
+function kernel_arch(arch)
+  local map = {
+     ["aarch64"] = "arm64",
+     ["armv6hl"] = "arm",
+     ["armv7hl"] = "arm",
+     ["i386"] = "x86",
+     ["i486"] = "x86",
+     ["i586"] = "x86",
+     ["i686"] = "x86",
+     ["x86_64"] = "x86",
+  }
+  return map[arch] or arch
+end
+
+function gcc_target(arch)
+  local map = {
+    ["arm"] = "armv7hl-meego-linux-gnueabi",
+  }
+  return map[arch] or arch.."-meego-linux"
+end
+}
+
 #
 # A note about versions and patches.
 # This package is supposed to provide the official, stable kernel ABI, as specified
@@ -36,6 +63,25 @@ the kernel ABI. This package is mostly used by the C library and some
 low level system software, and is only used indirectly by regular
 applications.
 
+%ifarch %{ix86} x86_64
+
+%{lua:
+  for i,arch in ipairs({cross_archs()}) do
+    print(rpm.expand([[
+
+%package -n cross-]]..arch..[[-linux-glibc-devel
+Summary:        Linux headers for ]]..arch..[[ userspace cross development
+BuildArch:      noarch
+Provides:       cross-]]..arch..[[-kernel-headers = %{kversion}
+
+%description -n cross-]]..arch..[[-linux-glibc-devel
+This package provides Linux kernel headers for ]]..arch..[[, the kernel API description
+required for compilation of almost all programs.
+]]))
+  end}
+
+%endif
+
 %prep
 %autosetup -p1 -n %{name}-%{version}/upstream
 
@@ -43,16 +89,46 @@ applications.
 
 %install
 
+#cd %{lua:print(kernel_arch(rpm.expand("%_target_cpu")))}
+#cp -a usr %{buildroot}/
+#cp -a version.h %{buildroot}%{_includedir}/linux/
+#cd ..
 make INSTALL_HDR_PATH=$RPM_BUILD_ROOT/usr headers_install
 
+%ifarch %{ix86} x86_64
+
+%{lua:
+  for i,arch in ipairs({cross_archs()}) do
+    print(rpm.expand([[
+sysroot=/opt/cross/]]..gcc_target(arch)..[[/sys-root
+mkdir -p %{buildroot}${sysroot}/%{_includedir}/linux/
+make ARCH=]]..kernel_arch(arch)..[[ INSTALL_HDR_PATH=$RPM_BUILD_ROOT/${sysroot}/usr headers_install
+rm -rf $RPM_BUILD_ROOT/${sysroot}/usr/include/drm
+rm -rf $RPM_BUILD_ROOT/${sysroot}/usr/include/scsi
+]]))
+  end}
+
+%endif
+
+rm -rf $RPM_BUILD_ROOT/usr/include/drm
 # glibc provides scsi headers for itself, for now
-find  $RPM_BUILD_ROOT/usr/include -name ".install" | xargs rm -f
-find  $RPM_BUILD_ROOT/usr/include -name "..install.cmd" | xargs rm -f
+find  $RPM_BUILD_ROOT -name ".install" | xargs rm -f
+find  $RPM_BUILD_ROOT -name "..install.cmd" | xargs rm -f
 rm -rf $RPM_BUILD_ROOT/usr/include/scsi
-rm -f $RPM_BUILD_ROOT/usr/include/asm*/atomic.h
-rm -f $RPM_BUILD_ROOT/usr/include/asm*/io.h
-rm -f $RPM_BUILD_ROOT/usr/include/asm*/irq.h
 
 %files
 %license COPYING
-/usr/include/*
+%{_includedir}/*
+
+%ifarch %{ix86} x86_64
+
+%{lua:
+  for i,arch in ipairs({cross_archs()}) do
+    print(rpm.expand([[
+
+%files -n cross-]]..arch..[[-linux-glibc-devel
+%license COPYING
+/opt/cross/]]..gcc_target(arch).."\n"))
+  end}
+
+%endif
