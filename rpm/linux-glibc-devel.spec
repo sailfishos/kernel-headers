@@ -3,7 +3,7 @@ Name: linux-glibc-devel
 License: GPLv2
 URL: http://www.kernel.org/
 
-%define kversion 5.10.269
+%define kversion 6.18.50
 Version: %{kversion}
 Release: 1
 Provides: kernel-headers = %{kversion}
