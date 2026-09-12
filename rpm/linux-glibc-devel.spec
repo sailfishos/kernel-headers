@@ -4,7 +4,7 @@ License: GPLv2
 URL: http://www.kernel.org/
 
 %define kversion 5.10.269
-Version: %{kversion}
+Version: 5.10.269
 Release: 1
 Provides: kernel-headers = %{kversion}
 Obsoletes: kernel-headers < %{kversion}
